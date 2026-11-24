@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Heart, MessageSquare } from "lucide-react";
 import { SiteLayout } from "@/components/SiteLayout";
+import { PostImage } from "@/components/PostImage";
 import { useProfile } from "@/lib/use-profile";
 import { avatarDe, formatarData, useCommunity } from "@/lib/use-community";
 
@@ -88,6 +89,7 @@ function UsuarioPublico() {
               <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {post.texto}
               </p>
+              {post.imagem_url && <PostImage src={post.imagem_url} titulo={post.titulo} />}
               <div className="mt-4 flex items-center gap-4 border-t border-border pt-3 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <Heart className="size-4" /> {post.curtidas}

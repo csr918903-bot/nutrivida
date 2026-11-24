@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Heart, MessageSquare, Send, Trash2, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Heart, ImagePlus, MessageSquare, Send, Trash2, Users, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PostImage } from "@/components/PostImage";
+import { prepararImagem, validarImagem } from "@/lib/community-image";
 import { SiteLayout } from "@/components/SiteLayout";
 import { useProfile } from "@/lib/use-profile";
 import { avatarDe, formatarData, useCommunity, type Post } from "@/lib/use-community";
@@ -32,17 +35,46 @@ function Comunidade() {
   const [titulo, setTitulo] = useState("");
   const [texto, setTexto] = useState("");
   const [aviso, setAviso] = useState("");
+  const [foto, setFoto] = useState<File>();
+  const [previa, setPrevia] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+  const inputFoto = useRef<HTMLInputElement>(null);
 
-  const enviar = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!foto) { setPrevia(""); return; }
+    const url = URL.createObjectURL(foto);
+    setPrevia(url);
+    return () => URL.revokeObjectURL(url);
+  }, [foto]);
+
+  const escolherFoto = async (arquivo?: File) => {
+    if (!arquivo) return;
+    const erro = validarImagem(arquivo);
+    if (erro) { setAviso(erro); return; }
+    setOcupado(true);
+    setAviso("");
+    try { setFoto(await prepararImagem(arquivo)); }
+    catch (erro) { setAviso(erro instanceof Error ? erro.message : "Não foi possível abrir a foto."); }
+    finally { setOcupado(false); }
+  };
+
+  const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (ocupado) return;
     if (titulo.trim().length < 3 || texto.trim().length < 10) {
       setAviso("Escreva um título e conte sua ideia com pelo menos 10 caracteres.");
       return;
     }
-    publicar(profile.name, titulo.trim(), texto.trim());
-    setTitulo("");
-    setTexto("");
+    setOcupado(true);
     setAviso("");
+    try {
+      await publicar(profile.name, titulo.trim(), texto.trim(), foto);
+      setTitulo("");
+      setTexto("");
+      setFoto(undefined);
+    } catch (erro) {
+      setAviso(erro instanceof Error ? erro.message : "Não foi possível publicar. Tente novamente.");
+    } finally { setOcupado(false); }
   };
 
   return (
@@ -75,6 +107,7 @@ function Comunidade() {
             placeholder="Título da sua ideia"
             value={titulo}
             maxLength={80}
+            disabled={ocupado}
             onChange={(e) => setTitulo(e.target.value)}
           />
           <textarea
@@ -82,14 +115,28 @@ function Comunidade() {
             placeholder="Conta como você faz: refeições, horários, receitas..."
             value={texto}
             maxLength={800}
+            disabled={ocupado}
             onChange={(e) => setTexto(e.target.value)}
           />
 
-          {aviso && <p className="mt-3 text-sm text-destructive">{aviso}</p>}
+          <input ref={inputFoto} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" aria-label="Escolher foto do post" onChange={(e) => { void escolherFoto(e.target.files?.[0]); e.target.value = ""; }} />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button type="button" variant="outline" disabled={ocupado} onClick={() => inputFoto.current?.click()}>
+              <ImagePlus /> {foto ? "Trocar foto" : "Adicionar foto"}
+            </Button>
+            <span className="text-xs text-muted-foreground">JPG, PNG ou WebP · até 5 MB</span>
+          </div>
+          {previa && (
+            <div className="relative mt-3 w-36">
+              <img src={previa} alt="Prévia da foto selecionada" className="aspect-[4/3] w-full rounded-lg border border-border bg-muted object-contain" />
+              <Button type="button" variant="outline" size="icon" aria-label="Remover foto" title="Remover foto" disabled={ocupado} onClick={() => setFoto(undefined)} className="absolute right-1 top-1 size-7 bg-card"><X /></Button>
+            </div>
+          )}
+          {aviso && <p role="alert" className="mt-3 text-sm text-destructive">{aviso}</p>}
 
-          <button type="submit" className="btn-leaf mt-4">
-            <Send className="size-4" /> Publicar
-          </button>
+          <Button type="submit" disabled={ocupado} className="btn-leaf mt-4 h-auto">
+            <Send className="size-4" /> {ocupado ? "Preparando..." : "Publicar"}
+          </Button>
         </form>
 
         <div className="mt-8 flex flex-col gap-5">
@@ -176,6 +223,7 @@ function PostCard({
       <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
         {post.texto}
       </p>
+      {post.imagem_url && <PostImage src={post.imagem_url} titulo={post.titulo} />}
 
       <div className="mt-4 flex items-center gap-2 border-t border-border pt-3">
         <button

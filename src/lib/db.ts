@@ -15,6 +15,6 @@ const anonKey = import.meta.env["VITE_SUPABASE_ANON_KEY"] as string | undefined;
 
 export const bancoAtivo = Boolean(url && anonKey);
 
-export const banco: SupabaseClient | null = bancoAtivo
-  ? createClient(url!, anonKey!, { auth: { persistSession: false } })
+export const banco: SupabaseClient | null = url && anonKey
+  ? createClient(url, anonKey, { auth: { persistSession: false } })
   : null;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { banco, bancoAtivo } from "./db";
+import { COMMUNITY_BUCKET, imagemLocal, salvarPostsLocais } from "./community-image";
 
 export type Comentario = {
   id: string;
@@ -17,6 +18,7 @@ export type Post = {
   data: string;
   curtidas: number;
   comentarios: Comentario[];
+  imagem_url?: string;
 };
 
 const KEY = "nutrivida:posts";
@@ -25,6 +27,7 @@ const EVENT = "nutrivida:posts-change";
 const SEED: Post[] = [
   {
     id: "p1",
+    imagem_url: "/images/community-breakfast.webp",
     autor: "Marina Alves",
     titulo: "Café da manhã que me segura até o almoço",
     texto:
@@ -42,6 +45,7 @@ const SEED: Post[] = [
   },
   {
     id: "p2",
+    imagem_url: "/images/community-meal-prep.webp",
     autor: "Rafael Lima",
     titulo: "Marmita de domingo para a semana toda",
     texto:
@@ -52,6 +56,7 @@ const SEED: Post[] = [
   },
   {
     id: "p3",
+    imagem_url: "/images/community-water.webp",
     autor: "Bianca Souza",
     titulo: "Truque para beber mais água",
     texto:
@@ -77,20 +82,26 @@ const SEED: Post[] = [
 
 /* ---------- modo navegador (localStorage) ---------- */
 
+function fotoExemplo(post: Post): Post {
+  if (post.imagem_url) return post;
+  const exemplo = SEED.find((p) => p.autor === post.autor && p.titulo === post.titulo && p.texto === post.texto);
+  return exemplo?.imagem_url ? { ...post, imagem_url: exemplo.imagem_url } : post;
+}
+
 function ler(): Post[] {
   if (typeof window === "undefined") return SEED;
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return SEED;
     const dados = JSON.parse(raw) as Post[];
-    return Array.isArray(dados) ? dados : SEED;
+    return Array.isArray(dados) ? dados.map(fotoExemplo) : SEED;
   } catch {
     return SEED;
   }
 }
 
 function gravar(posts: Post[]) {
-  localStorage.setItem(KEY, JSON.stringify(posts));
+  salvarPostsLocais(localStorage, KEY, posts);
   window.dispatchEvent(new Event(EVENT));
 }
 
@@ -107,6 +118,7 @@ type LinhaPost = {
   texto: string;
   curtidas: number;
   criado_em: string;
+  imagem_url?: string | null;
 };
 
 type LinhaComentario = {
@@ -131,13 +143,14 @@ async function lerDoBanco(): Promise<Post[]> {
   const linhasPost = (posts.data ?? []) as LinhaPost[];
   const linhasComentario = (comentarios.data ?? []) as LinhaComentario[];
 
-  return linhasPost.map((p) => ({
+  return linhasPost.map((p) => fotoExemplo({
     id: p.id,
     autor: p.autor,
     titulo: p.titulo,
     texto: p.texto,
     data: p.criado_em,
     curtidas: p.curtidas,
+    ...(p.imagem_url ? { imagem_url: p.imagem_url } : {}),
     comentarios: linhasComentario
       .filter((c) => c.post_id === p.id)
       .map((c) => ({ id: c.id, autor: c.autor, texto: c.texto, data: c.criado_em })),
@@ -181,10 +194,17 @@ export function useCommunity() {
   }, [atualizar]);
 
   const publicar = useCallback(
-    async (autor: string, titulo: string, texto: string) => {
+    async (autor: string, titulo: string, texto: string, foto?: File) => {
       if (banco) {
-        const { error } = await banco.from("posts").insert({ autor, titulo, texto });
-        if (error) console.error("Não consegui publicar:", error);
+        let imagem_url: string | undefined;
+        if (foto) {
+          const path = `posts/${crypto.randomUUID()}.${foto.type === "image/png" ? "png" : foto.type === "image/jpeg" ? "jpg" : "webp"}`;
+          const { error: uploadError } = await banco.storage.from(COMMUNITY_BUCKET).upload(path, foto, { contentType: foto.type, upsert: false });
+          if (uploadError) throw new Error("Não foi possível enviar a foto. Confira o armazenamento online ou publique sem foto.");
+          imagem_url = banco.storage.from(COMMUNITY_BUCKET).getPublicUrl(path).data.publicUrl;
+        }
+        const { error } = await banco.from("posts").insert({ autor, titulo, texto, ...(imagem_url ? { imagem_url } : {}) });
+        if (error) throw new Error("Não foi possível publicar. Confira a conexão e a coluna imagem_url se anexou uma foto. Seu texto e sua foto foram mantidos.");
         await atualizar();
         return;
       }
@@ -196,6 +216,7 @@ export function useCommunity() {
         data: new Date().toISOString(),
         curtidas: 0,
         comentarios: [],
+        ...(foto ? { imagem_url: await imagemLocal(foto) } : {}),
       };
       gravar([post, ...ler()]);
     },

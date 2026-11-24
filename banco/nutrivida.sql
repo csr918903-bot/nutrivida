@@ -6,6 +6,7 @@ create table if not exists public.posts (
   autor text not null,
   titulo text not null,
   texto text not null,
+  imagem_url text,
   curtidas integer not null default 0,
   criado_em timestamptz not null default now()
 );
