@@ -338,14 +338,45 @@ const rules: Rule[] = [
     reply: "Qual tipo de alimentação você gostaria? Saudável, para emagrecer ou para ganhar massa?",
   },
   {
-    words: ["dieta"],
+     words: ["dieta"],
     reply:
       "Uma dieta equilibrada possui proteínas, carboidratos, gorduras boas, vitaminas e minerais.",
+  },
+   { includes: ["oq é dieta","oque é dieta","o que é dieta","oq é uma dieta","oque seria uma dieta","dieta?"], 
+    reply: "Dieta é o conjunto de alimentos e bebidas que uma pessoa consome no dia a dia.
+No cotidiano, a palavra também significa um plano alimentar criado para um objetivo específico, como:
+• Emagrecer ou ganhar massa muscular.
+• Controlar doenças (como diabetes ou pressão alta).
+• Seguir um estilo de vida (como o vegetarianismo).
+" 
+   },
+  {
+    includes: ["rotina de dieta","rotina dieta"],
+    reply:
+      "Claro! Faço sim uma rotina de dieta organizada por horário. Primeiro a gente monta uma base simples com o que você gosta e pode comer no dia a dia, e deixo organizado assim:
+
+Segunda:
+- 06h: Café da manhã (ex.: pão integral com ovos mexidos + café ou fruta)
+- 12h: Almoço (ex.: arroz, feijão, peito de frango ou carne + salada)
+- 19h: Jantar (ex.: batata-doce ou arroz + frango/peixe + legumes)
+
+Se quiser, me fala seu objetivo (emagrecer, ganhar massa ou manter), se tem alguma restrição e quais horários funcionam melhor para você que eu ajusto certinho!",
   },
   {
     words: ["peso"],
     reply: "Você gostaria de perder peso, ganhar peso ou ganhar massa muscular?",
   },
+   { includes: ["quero uma dieta","quero dieta"], 
+    reply: "Claro! Faço sim uma sugestão simples de dieta para você seguir no dia a dia:
+
+- Café da manhã: pão integral com ovos mexidos + fruta ou café
+- Lanche da manhã: uma fruta ou iogurte natural
+- Almoço: arroz, feijão, frango ou carne + salada
+- Lanche da tarde: pão, tapioca ou fruta com aveia
+- Jantar: frango, carne ou peixe + legumes e arroz ou batata
+- Ceia: uma fruta leve, chá ou iogurte (se sentir fome antes de dormir)
+
+Se quiser adaptar com os alimentos que você gosta ou ajustar para o seu objetivo, é só me falar!" },
 ];
 
 export const RESPOSTA_PADRAO =
