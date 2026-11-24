@@ -337,11 +337,6 @@ const rules: Rule[] = [
     ],
     reply: "Qual tipo de alimentação você gostaria? Saudável, para emagrecer ou para ganhar massa?",
   },
-  {
-     words: ["dieta"],
-    reply:
-      "Uma dieta equilibrada possui proteínas, carboidratos, gorduras boas, vitaminas e minerais.",
-  },
    { includes: ["oq é dieta","oque é dieta","o que é dieta","oq é uma dieta","oque seria uma dieta","dieta?"], 
     reply: `Dieta é o conjunto de alimentos e bebidas que uma pessoa consome no dia a dia.
 No cotidiano, a palavra também significa um plano alimentar criado para um objetivo específico, como:
@@ -362,10 +357,6 @@ Segunda:
 
  Se quiser, me fala seu objetivo (emagrecer, ganhar massa ou manter), se tem alguma restrição e quais horários funcionam melhor para você que eu ajusto certinho!`,
   },
-  {
-    words: ["peso"],
-    reply: "Você gostaria de perder peso, ganhar peso ou ganhar massa muscular?",
-  },
    { includes: ["quero uma dieta","quero dieta"], 
     reply: `Claro! Faço sim uma sugestão simples de dieta para você seguir no dia a dia:
 
@@ -377,6 +368,16 @@ Segunda:
 - Ceia: uma fruta leve, chá ou iogurte (se sentir fome antes de dormir)
 
  Se quiser adaptar com os alimentos que você gosta ou ajustar para o seu objetivo, é só me falar!` },
+  // Palavras genéricas ficam depois dos pedidos e perguntas específicos.
+  {
+    words: ["dieta"],
+    reply:
+      "Uma dieta equilibrada possui proteínas, carboidratos, gorduras boas, vitaminas e minerais.",
+  },
+  {
+    words: ["peso"],
+    reply: "Você gostaria de perder peso, ganhar peso ou ganhar massa muscular?",
+  },
 ];
 
 export const RESPOSTA_PADRAO =
