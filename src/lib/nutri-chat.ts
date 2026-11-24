@@ -1,9 +1,8 @@
 /**
  * Motor de respostas do assistente Nutrivida.
  *
- * Regras são avaliadas em ordem: as mais específicas vêm primeiro para não
- * serem "engolidas" por regras genéricas (bug do arquivo original, onde
- * "dieta para emagrecer" nunca era alcançado porque "emagrecer" vinha antes).
+ * Todas as regras são avaliadas: frases com mais palavras têm prioridade
+ * sobre palavras soltas. A ordem só desempata regras igualmente específicas.
  */
 
 type Rule = {
@@ -98,7 +97,7 @@ const rules: Rule[] = [
       "Para emagrecer: mantenha déficit calórico, pratique exercícios físicos, consuma proteínas e reduza ultraprocessados.",
   },
   {
-    includes: ["dieta hipertrofia", "dieta para ganhar massa"],
+    includes: ["dieta hipertrofia", "dieta para hipertrofia", "dieta para ganhar massa"],
     reply:
       "Dieta para hipertrofia: ovos e aveia no café da manhã, arroz, feijão e carne no almoço, banana com pasta de amendoim no lanche e jantar rico em proteínas.",
   },
@@ -387,13 +386,37 @@ export function responder(pergunta: string): string {
   const p = pergunta.toLowerCase().trim();
   if (!p) return RESPOSTA_PADRAO;
 
+  let melhorResposta = RESPOSTA_PADRAO;
+  let melhorPalavras = 0;
+  let melhorComprimento = 0;
+
+  const considerar = (termos: string[], reply: string) => {
+    const palavras = termos.reduce(
+      (total, termo) => total + (termo.match(/[\p{L}\p{N}]+/gu)?.length ?? 0),
+      0,
+    );
+    const comprimento = termos.reduce((total, termo) => total + termo.length, 0);
+    if (palavras > melhorPalavras ||
+        (palavras === melhorPalavras && comprimento > melhorComprimento)) {
+      melhorPalavras = palavras;
+      melhorComprimento = comprimento;
+      melhorResposta = reply;
+    }
+  };
+
   for (const rule of rules) {
-    if (rule.includes?.some((term) => p.includes(term))) return rule.reply;
-    if (rule.words?.some((word) => temPalavra(p, word))) return rule.reply;
-    if (rule.all?.some((group) => group.every((term) => p.includes(term)))) return rule.reply;
+    for (const term of rule.includes ?? []) {
+      if (p.includes(term)) considerar([term], rule.reply);
+    }
+    for (const word of rule.words ?? []) {
+      if (temPalavra(p, word)) considerar([word], rule.reply);
+    }
+    for (const group of rule.all ?? []) {
+      if (group.every((term) => p.includes(term))) considerar(group, rule.reply);
+    }
   }
 
-  return RESPOSTA_PADRAO;
+  return melhorResposta;
 }
 
 export const SUGESTOES = [
